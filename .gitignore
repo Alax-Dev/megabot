@@ -5,8 +5,8 @@
 !.env.example
 
 # Telegram MTProto session files
-*.session
-*.session-journal
+*.session*
+*.lock
 
 # Python bytecode & environments
 __pycache__/
