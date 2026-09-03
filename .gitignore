@@ -1,0 +1,29 @@
+# Secrets & Credentials
+.env
+*.env
+*.env.*
+!.env.example
+
+# Telegram MTProto session files
+*.session
+*.session-journal
+
+# Python bytecode & environments
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+.venv/
+.pytest_cache/
+
+# Downloads & runtime data
+downloads/
+*.log
+megabot.log
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
