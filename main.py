@@ -49,13 +49,16 @@ async def set_bot_commands(client):
 
 async def web_server():
     """Keep-alive endpoint for Docker / Railway style hosts."""
-    web_app = web.Application()
-    web_app.router.add_get("/", lambda _: web.Response(text="MegaBot is running"))
-    runner = web.AppRunner(web_app)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", PORT)
-    await site.start()
-    logging.info("Web keep-alive server on port %s", PORT)
+    try:
+        web_app = web.Application()
+        web_app.router.add_get("/", lambda _: web.Response(text="MegaBot is running"))
+        runner = web.AppRunner(web_app)
+        await runner.setup()
+        site = web.TCPSite(runner, "0.0.0.0", PORT)
+        await site.start()
+        logging.info("Web keep-alive server on port %s", PORT)
+    except Exception as e:
+        logging.warning("Web server failed to bind on port %s: %s (non-fatal, bot continues)", PORT, e)
 
 
 async def check_database():
@@ -111,9 +114,11 @@ async def main():
 
 if __name__ == "__main__":
     import asyncio
-    # kurigram + Python 3.12: asyncio.run() creates a loop that conflicts
-    # with Pyrogram's session handling — use the classic loop pattern instead
     try:
-        asyncio.get_event_loop().run_until_complete(main())
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(main())
     except (KeyboardInterrupt, SystemExit):
         logging.info("MegaBot stopped")
+    except Exception as e:
+        logging.critical("Fatal crash in main: %s", e, exc_info=True)
