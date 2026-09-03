@@ -1,8 +1,10 @@
 # MegaBot — env-based configuration (mirrors AniwatchTvdl/config.py style)
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # ─── Telegram ────────────────────────────────────────────────
 API_ID = int(os.environ.get("API_ID", 0))

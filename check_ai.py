@@ -1,10 +1,22 @@
 #!/usr/bin/env python3
-# Quick diagnostic tool to test OpenRouter AI connection & agent setup
 import asyncio
+import sys
 import time
-from config import OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_BASE_URL
-from megabot.ai.client import call_openrouter_json
-from megabot.ai.planner import plan_actions
+
+try:
+    import aiohttp
+    from config import OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_BASE_URL
+    from megabot.ai.client import call_openrouter_json
+    from megabot.ai.planner import plan_actions
+except ImportError as e:
+    print("\n❌ Missing Python dependencies!")
+    print(f"   Error: {e}")
+    print("\n👉 How to fix:")
+    print("   • If running directly on Ubuntu/VPS:")
+    print("       pip install -r requirements.txt")
+    print("   • If running with Docker Compose:")
+    print("       docker compose exec bot python check_ai.py\n")
+    sys.exit(1)
 
 
 async def test_connection():
