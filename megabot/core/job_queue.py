@@ -32,11 +32,14 @@ class JobQueue:
             return
         for name in os.listdir(DOWNLOAD_DIR):
             path = os.path.join(DOWNLOAD_DIR, name)
-            job = await db.get_job(name)
-            if job and job.get("status") == "awaiting_choice":
-                age_h = (time.time() - os.path.getmtime(path)) / 3600
-                if age_h < 24 * 7:
-                    continue  # still waiting for the user's button press
+            try:
+                job = await db.get_job(name)
+                if job and job.get("status") == "awaiting_choice":
+                    age_h = (time.time() - os.path.getmtime(path)) / 3600
+                    if age_h < 24 * 7:
+                        continue  # still waiting for the user's button press
+            except Exception as e:
+                log.debug("Database check during cleanup skipped: %s", e)
             shutil.rmtree(path, ignore_errors=True)
             log.info("cleaned stale download dir %s", name)
 

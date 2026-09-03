@@ -12,18 +12,24 @@ logging.basicConfig(level=logging.INFO)
 class Database:
     def __init__(self, uri, db_name=MONGO_NAME):
         if uri:
-            self.client = motor.motor_asyncio.AsyncIOMotorClient(
-                uri, serverSelectionTimeoutMS=5000
-            )
-            self.db = self.client[db_name]
+            try:
+                self.client = motor.motor_asyncio.AsyncIOMotorClient(
+                    uri, serverSelectionTimeoutMS=5000
+                )
+                self.db = self.client[db_name]
 
-            # ── Collections ──────────────────────────────────────
-            self.users = self.db["users"]
-            self.jobs = self.db["jobs"]
-            self.settings = self.db["user_settings"]
-            self.link_cache = self.db["link_cache"]
-            self.mega_accounts = self.db["mega_accounts"]
-            self.mega_sessions = self.db["mega_sessions"]
+                # ── Collections ──────────────────────────────────────
+                self.users = self.db["users"]
+                self.jobs = self.db["jobs"]
+                self.settings = self.db["user_settings"]
+                self.link_cache = self.db["link_cache"]
+                self.mega_accounts = self.db["mega_accounts"]
+                self.mega_sessions = self.db["mega_sessions"]
+            except Exception as e:
+                self.client = self.db = None
+                self.users = self.jobs = self.settings = self.link_cache = None
+                self.mega_accounts = self.mega_sessions = None
+                logging.error("Failed to initialize MongoDB client: %s", e)
         else:
             # Graceful no-op when MONGO_URL is not set
             self.client = self.db = None

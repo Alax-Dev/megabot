@@ -35,16 +35,19 @@ app = Client(
 
 
 async def set_bot_commands(client):
-    from pyrogram.types import BotCommand
-    await client.set_bot_commands([
-        BotCommand("start", "Start the bot"),
-        BotCommand("agent", "Check AI Agent status"),
-        BotCommand("login", "Connect your MEGA account"),
-        BotCommand("logout", "Disconnect your MEGA account"),
-        BotCommand("settings", "Your preferences"),
-        BotCommand("help", "How to use the bot"),
-        BotCommand("stats", "Bot statistics (owner)"),
-    ])
+    try:
+        from pyrogram.types import BotCommand
+        await client.set_bot_commands([
+            BotCommand("start", "Start the bot"),
+            BotCommand("agent", "Check AI Agent status"),
+            BotCommand("login", "Connect your MEGA account"),
+            BotCommand("logout", "Disconnect your MEGA account"),
+            BotCommand("settings", "Your preferences"),
+            BotCommand("help", "How to use the bot"),
+            BotCommand("stats", "Bot statistics (owner)"),
+        ])
+    except Exception as e:
+        logging.warning("Setting bot commands skipped: %s", e)
 
 
 async def web_server():
