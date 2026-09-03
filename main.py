@@ -16,7 +16,7 @@ logging.basicConfig(
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
 if not all([API_ID, API_HASH, BOT_TOKEN]):
-    print("Please set API_ID, API_HASH and BOT_TOKEN in your .env file.")
+    logging.critical("❌ Missing credentials: API_ID, API_HASH, or BOT_TOKEN not set in .env!")
     sys.exit(1)
 
 SESSION_DIR = os.environ.get("SESSION_DIR", ".")
@@ -59,24 +59,24 @@ async def web_server():
 
 
 async def check_database():
-    """Fail fast with a clear message if MongoDB is unreachable or auth is bad."""
+    """Verify MongoDB Atlas connection with friendly error messaging."""
     from config import MONGO_URL
     from megabot.core.database import db
     if not MONGO_URL:
-        logging.warning("MONGO_URL not set — bot will run without persistence!")
+        logging.warning("⚠️ MONGO_URL not set — bot will run without database persistence!")
         return
     try:
+        logging.info("Checking MongoDB connection...")
         await db.client.admin.command("ping")
-        logging.info("MongoDB connection OK")
+        logging.info("✅ MongoDB Atlas connected successfully!")
     except Exception as e:
-        logging.critical("MongoDB connection FAILED: %s", e)
-        if "auth" in str(e).lower() or "8000" in str(e):
-            logging.critical(
-                "↳ The username/password in MONGO_URL is wrong, or the database "
-                "user doesn't exist in MongoDB Atlas yet. Atlas → Database Access "
-                "→ check user 'megabot' and its password."
-            )
-        raise SystemExit(1)
+        logging.error("❌ MongoDB Atlas connection FAILED: %s", e)
+        logging.error(
+            "↳ Tips for MongoDB Atlas:\n"
+            "  1. Network Access: Ensure IP 0.0.0.0/0 (Allow access from anywhere) is enabled in Atlas.\n"
+            "  2. Database Access: Ensure the username and password in MONGO_URL are correct.\n"
+            "  3. Special characters in password must be URL-encoded."
+        )
 
 
 async def check_ai():
@@ -89,17 +89,21 @@ async def check_ai():
 
 
 async def main():
+    logging.info("Starting Telegram MTProto connection...")
+    await app.start()
+    me = await app.get_me()
+    logging.info("✅ Connected to Telegram as @%s (ID: %s) 🚀", me.username, me.id)
+
     await check_database()
     await check_ai()
     await web_server()
-    await app.start()
     await set_bot_commands(app)
 
     # start the background job queue
     from megabot.core.job_queue import job_queue
     await job_queue.start(app)
 
-    logging.info("MegaBot started 🚀")
+    logging.info("⚡ MegaBot is fully operational and listening for messages!")
     await idle()
     await job_queue.stop()
     await app.stop()

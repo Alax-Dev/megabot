@@ -57,8 +57,16 @@ async def call_openrouter_json(system_prompt: str, user_prompt: str,
                     clean = clean[3:]
                 if clean.endswith("```"):
                     clean = clean[:-3]
+                clean = clean.strip()
 
-                return json.loads(clean.strip())
+                import re
+                try:
+                    return json.loads(clean)
+                except json.JSONDecodeError:
+                    match = re.search(r"(\{[\s\S]*\})", clean)
+                    if match:
+                        return json.loads(match.group(1))
+                    raise
 
     except aiohttp.ClientError as e:
         log.warning("Network error calling OpenRouter: %s", e)

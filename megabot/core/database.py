@@ -12,7 +12,9 @@ logging.basicConfig(level=logging.INFO)
 class Database:
     def __init__(self, uri, db_name=MONGO_NAME):
         if uri:
-            self.client = motor.motor_asyncio.AsyncIOMotorClient(uri)
+            self.client = motor.motor_asyncio.AsyncIOMotorClient(
+                uri, serverSelectionTimeoutMS=5000
+            )
             self.db = self.client[db_name]
 
             # ── Collections ──────────────────────────────────────
