@@ -33,6 +33,7 @@ async def set_bot_commands(client):
     from pyrogram.types import BotCommand
     await client.set_bot_commands([
         BotCommand("start", "Start the bot"),
+        BotCommand("agent", "Check AI Agent status"),
         BotCommand("login", "Connect your MEGA account"),
         BotCommand("logout", "Disconnect your MEGA account"),
         BotCommand("settings", "Your preferences"),
@@ -73,8 +74,18 @@ async def check_database():
         raise SystemExit(1)
 
 
+async def check_ai():
+    """Log OpenRouter AI Agent status on startup."""
+    from config import OPENROUTER_API_KEY, OPENROUTER_MODEL
+    if not OPENROUTER_API_KEY:
+        logging.warning("🤖 AI Agent: Inactive (Set OPENROUTER_API_KEY in .env to activate)")
+        return
+    logging.info("🤖 AI Agent: Active (Model: %s, Privacy & Sandbox Enforced)", OPENROUTER_MODEL)
+
+
 async def main():
     await check_database()
+    await check_ai()
     await web_server()
     await app.start()
     await set_bot_commands(app)
