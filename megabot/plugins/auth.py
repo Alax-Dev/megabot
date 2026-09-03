@@ -53,9 +53,11 @@ async def cancel_cmd(client: Client, message: Message):
         await message.reply_text("Nothing to cancel.")
 
 
-@Client.on_message(filters.private & filters.text & filters.regex(r"^(?!/)"))
+@Client.on_message(filters.private & filters.incoming & ~filters.bot & ~filters.service & filters.text & filters.regex(r"^(?!/)"))
 async def login_wizard(client: Client, message: Message):
     """Intercepts plain text ONLY while a login wizard step is active."""
+    if not message.from_user or message.from_user.is_bot or message.from_user.is_self:
+        return
     user_id = message.from_user.id
     state = _login_state.get(user_id)
     if not state:

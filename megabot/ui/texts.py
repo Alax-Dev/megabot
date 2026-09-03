@@ -33,8 +33,8 @@ BANNED = "🚫 You are banned from using this bot."
 
 ERROR_GENERIC = "❌ Something went wrong while processing your job. Please try again."
 
-NO_LINK = ("🤔 I couldn't find a MEGA link in that message.\n"
-           "Send me something like:\n<code>https://mega.nz/file/xxxxx#yyyy</code>")
+NO_LINK = ("🤔 I couldn't find a valid MEGA link in that message.\n"
+           "Send me a link formatted like:\n<code>https://mega.nz/file/...#...</code>")
 
 BUSY = ("⏳ You already have an active job. Please wait for it to finish — "
         "max {limit} job(s) at a time.")

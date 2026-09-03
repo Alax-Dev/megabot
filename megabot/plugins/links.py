@@ -11,8 +11,22 @@ from megabot.downloaders.mega import extract_mega_links, link_key
 from megabot.ui import texts
 
 
-@Client.on_message(filters.private & filters.text & ~filters.command(["start", "help", "settings", "stats", "ban", "unban", "broadcast", "login", "logout", "cancel"]))
+@Client.on_message(
+    filters.private
+    & filters.incoming
+    & ~filters.bot
+    & ~filters.service
+    & filters.text
+    & ~filters.command([
+        "start", "help", "settings", "stats", "ban", "unban",
+        "broadcast", "login", "logout", "cancel", "agent", "ai"
+    ])
+)
 async def on_link(client: Client, message: Message):
+    # Safety check: never process messages from self or other bots
+    if not message.from_user or message.from_user.is_bot or message.from_user.is_self:
+        return
+
     user_id = message.from_user.id
 
     # let the login wizard intercept plain text first
@@ -28,6 +42,9 @@ async def on_link(client: Client, message: Message):
 
     links = extract_mega_links(message.text)
     if not links:
+        # If user typed an unrecognized slash command, ignore silently
+        if message.text.startswith("/"):
+            return
         await message.reply_text(texts.NO_LINK, disable_web_page_preview=True)
         return
 
@@ -68,11 +85,18 @@ async def on_link(client: Client, message: Message):
             await message.reply_text(texts.FOLDER_LINK_TRUNCATED)
             continue
 
-        # dedup cache
+        # Check if this exact link is currently being processed
         key = link_key(url)
-        if await db.get_cached_link(key):
-            await message.reply_text(texts.DUPLICATE)
-            continue
+        cached = await db.get_cached_link(key)
+        if cached:
+            cached_job_id = cached.get("job_id")
+            if cached_job_id:
+                job_doc = await db.get_job(cached_job_id)
+                if job_doc and job_doc.get("status") in ["queued", "downloading", "processing", "uploading"]:
+                    await message.reply_text(
+                        "⏳ This link is currently in progress in an active job! Please wait for it to finish."
+                    )
+                    continue
 
         job_id = uuid.uuid4().hex[:10]
         status_msg = await message.reply_text(texts.status_queued(url),

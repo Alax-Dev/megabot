@@ -6,8 +6,10 @@ from pyrogram.types import Message
 from config import OPENROUTER_API_KEY, OPENROUTER_MODEL
 
 
-@Client.on_message(filters.command(["agent", "ai"]) & filters.private)
+@Client.on_message(filters.command(["agent", "ai"]) & filters.private & filters.incoming & ~filters.bot)
 async def agent_status_cmd(client: Client, message: Message):
+    if not message.from_user or message.from_user.is_bot:
+        return
     if not OPENROUTER_API_KEY:
         await message.reply_text(
             "<blockquote>⚠️ <b>AI Agent Inactive</b></blockquote>\n"
