@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN mkdir -p /app/downloads /app/sessions
+
 EXPOSE 8080
 
 CMD ["python", "main.py"]

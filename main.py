@@ -1,4 +1,5 @@
 # MegaBot — MEGA downloader & Telegram uploader
+import os
 import sys
 import logging
 
@@ -18,8 +19,12 @@ if not all([API_ID, API_HASH, BOT_TOKEN]):
     print("Please set API_ID, API_HASH and BOT_TOKEN in your .env file.")
     sys.exit(1)
 
+SESSION_DIR = os.environ.get("SESSION_DIR", ".")
+os.makedirs(SESSION_DIR, exist_ok=True)
+
 app = Client(
     "megabot",
+    workdir=SESSION_DIR,
     api_id=API_ID,
     api_hash=API_HASH,
     bot_token=BOT_TOKEN,

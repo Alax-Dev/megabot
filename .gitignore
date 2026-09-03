@@ -20,6 +20,7 @@ venv/
 
 # Downloads & runtime data
 downloads/
+sessions/
 *.log
 megabot.log
 
