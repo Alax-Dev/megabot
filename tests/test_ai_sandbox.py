@@ -144,6 +144,35 @@ class TestAISecurityAndPrivacy(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(self.job_dir, ".env")))
         self.assertIn(f1, res)
 
+    def test_executor_executes_delete_file_safely(self):
+        """Executor safely deletes target files inside the sandbox and prevents traversal."""
+        import asyncio
+        from megabot.ai.executor import execute_plan
+
+        f1 = os.path.join(self.job_dir, "keep.mp4")
+        f2 = os.path.join(self.job_dir, "junk.txt")
+        f_outside = os.path.join(self.temp_dir, "outside.txt")
+        with open(f1, "w") as f: f.write("keep")
+        with open(f2, "w") as f: f.write("junk")
+        with open(f_outside, "w") as f: f.write("protect")
+
+        async def mock_edit(app, job, text, kb=None):
+            pass
+
+        job = {"_id": "test_job_del", "chat_id": 123, "message_id": 456}
+
+        plan = {
+            "summary": "Delete junk and try to delete outside file",
+            "actions": [
+                {"action": "delete_file", "files": ["junk.txt", "../outside.txt"]},
+            ]
+        }
+
+        res = asyncio.run(execute_plan(None, job, self.job_dir, plan, mock_edit))
+        self.assertFalse(os.path.exists(f2))         # junk.txt was deleted
+        self.assertTrue(os.path.exists(f1))          # keep.mp4 was preserved
+        self.assertTrue(os.path.exists(f_outside))   # outside.txt was NOT deleted (sandboxed)
+
 
 if __name__ == "__main__":
     unittest.main()

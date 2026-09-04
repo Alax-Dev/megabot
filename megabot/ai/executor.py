@@ -173,6 +173,24 @@ async def execute_plan(app, job: dict, dest_dir: str, plan: dict,
                 if filtered:
                     current_files = filtered
 
+            elif action_type == "delete_file":
+                raw_targets = act.get("files") or ([act.get("file")] if act.get("file") else [])
+                if isinstance(raw_targets, list):
+                    for rf in raw_targets:
+                        if not rf or not isinstance(rf, str):
+                            continue
+                        try:
+                            target_path = validate_sandbox_path(canonical_dest, os.path.join(canonical_dest, rf))
+                            if os.path.isfile(target_path):
+                                os.remove(target_path)
+                                log.info("AI Action delete_file: removed %s", target_path)
+                            elif os.path.isdir(target_path):
+                                shutil.rmtree(target_path, ignore_errors=True)
+                                log.info("AI Action delete_file: removed directory %s", target_path)
+                        except Exception as e:
+                            log.warning("AI Action delete_file failed on %s: %s", rf, e)
+                    current_files = _list_all_files(canonical_dest)
+
             elif action_type == "upload":
                 req_uploads = act.get("files", [])
                 if req_uploads and isinstance(req_uploads, list):

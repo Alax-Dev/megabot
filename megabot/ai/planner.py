@@ -28,6 +28,8 @@ ALLOWED ACTIONS:
    - Renames a file cleanly within the job directory.
 6. {"action": "upload", "files": ["<file1>", "<file2>"]}
    - Specifies which files to deliver to the user on Telegram. If omitted, all resulting files will be uploaded.
+7. {"action": "delete_file", "files": ["<file1>", "<file2>"]} or {"action": "delete_file", "file": "<file>"}
+   - Deletes specified unwanted, junk, sample, or temporary files safely inside the job directory.
 
 OUTPUT FORMAT:
 Respond with valid JSON only:
@@ -39,7 +41,8 @@ Respond with valid JSON only:
 }
 
 DECISION HEURISTICS:
-- If the user gave an explicit instruction (e.g., "convert to pdf", "extract only videos", "zip all files", "keep as archive"), STRICTLY prioritize fulfilling the user's intent!
+- If the user gave an explicit instruction (e.g., "convert to pdf", "extract only videos", "zip all files", "delete samples", "remove txt"), STRICTLY prioritize fulfilling the user's intent!
+- If user requested deleting/removing files or discarding certain formats, emit action "delete_file".
 - If the user gave NO explicit instruction (default mode):
   - ≥ 3 images and no video: action "images_to_pdf".
   - Lone archive: action "extract_archive" if it contains media/images/documents, or leave as archive if it contains programs/unknowns.

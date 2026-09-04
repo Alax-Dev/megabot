@@ -100,124 +100,138 @@ async def run_job(app, job: dict):
     dest_dir = os.path.join(DOWNLOAD_DIR, job_id)
     os.makedirs(dest_dir, exist_ok=True)
 
-    last_edit = {"t": 0.0}
-    loop = asyncio.get_running_loop()   # capture the bot's loop, not the worker's
-    done_before = [0]                   # bytes finished by earlier parts
+    try:
+        last_edit = {"t": 0.0}
+        loop = asyncio.get_running_loop()   # capture the bot's loop, not the worker's
+        done_before = [0]                   # bytes finished by earlier parts
 
-    def progress_cb(done_bytes: int, total_bytes: int):
-        now = time.time()
-        if now - last_edit["t"] < 3.0:
-            return
-        last_edit["t"] = now
-        asyncio.run_coroutine_threadsafe(
-            _edit_status(app, job, texts.progress_download(
-                name, done_before[0] + done_bytes, size),
-                cancel_kb(job_id)),
-            loop,
-        )
-
-    for idx, url in enumerate(urls, 1):
-        part_label = f" ({idx}/{len(urls)})" if multi else ""
-        for attempt in range(1, RETRY_ATTEMPTS + 1):
-            try:
-                await asyncio.to_thread(
-                    downloader.download, url, dest_dir, progress_cb
-                )
-                break
-            except asyncio.CancelledError:
-                raise
-            except Exception as e:
-                log.warning("download attempt %s failed%s: %s", attempt, part_label, e)
-                if "blocked" in str(e).lower():
-                    await db.set_job_status(job_id, "failed", error=str(e)[:300])
-                    await _edit_status(app, job, texts.error_blocked())
-                    return
-                if attempt == RETRY_ATTEMPTS:
-                    await db.set_job_status(job_id, "failed", error=str(e)[:300])
-                    await _edit_status(app, job, texts.error_download(e))
-                    return
-                await asyncio.sleep(2 ** attempt)
-        done_before[0] += infos[idx - 1].get("size", 0) or 0
-
-    await db.set_job_status(job_id, "processing")
-
-    # ── 3. AI / OpenRouter Processing (if enabled) ───────────
-    from config import OPENROUTER_API_KEY
-    ai_files = None
-    if OPENROUTER_API_KEY:
-        try:
-            from megabot.ai.pipeline_hook import run_ai_pipeline
-            await _edit_status(app, job, texts.status_ai_analyzing(name), cancel_kb(job_id))
-            user_prompt = job.get("prompt", "")
-            ai_files = await run_ai_pipeline(app, job, dest_dir, user_prompt, _edit_status)
-        except Exception as e:
-            log.warning("AI processing hook failed: %s", e)
-            ai_files = None
-
-    if ai_files:
-        await db.set_job_status(job_id, "uploading")
-        await _upload_files(app, job, name, ai_files)
-        return
-
-    await _edit_status(app, job, texts.status_analyzing(name), cancel_kb(job_id))
-
-    # ── 4. analyze downloaded content (rule-based fallback) ─
-    from megabot.analyzers.classify import classify
-    analysis = await asyncio.to_thread(classify, dest_dir)
-    kind = analysis["kind"]
-
-    # ── 5. branch on content kind ────────────────────────────
-    if kind == "archive":
-        # lone middle volume of a split set → try to rescue the missing
-        # volumes from the user's own MEGA account before giving up
-        from megabot.analyzers.classify import lone_continuation_volume
-        if len(analysis["archives"]) == 1 and \
-                lone_continuation_volume(analysis["archives"][0]):
-            lone = analysis["archives"][0]
-            await _edit_status(app, job, texts.status_rescue_search(), cancel_kb(job_id))
-
-            def rescue_cb(d, t, label=""):
-                now = time.time()
-                if now - last_edit["t"] < 3.0:
-                    return
-                last_edit["t"] = now
-                asyncio.run_coroutine_threadsafe(
-                    _edit_status(app, job, texts.progress_rescue(label, d, t),
-                                 cancel_kb(job_id)),
-                    loop,
-                )
-
-            rescued = await asyncio.to_thread(
-                downloader.rescue_siblings, lone, dest_dir, rescue_cb)
-            if rescued:
-                analysis = await asyncio.to_thread(classify, dest_dir)
-                kind = analysis["kind"]
-                await _edit_status(app, job, texts.status_analyzing(name), cancel_kb(job_id))
-            else:
-                # Don't refuse the job: a lone middle volume usually still
-                # holds fully readable files (WinRAR opens it for the same
-                # reason). Continue into the normal archive flow — extraction
-                # is best-effort now and recovers whatever is inside.
-                log.info("no sibling volumes in account — best-effort extract of %s",
-                         os.path.basename(lone))
-
-    if kind == "archive":
-        archive_path = analysis["archives"][0]
-        mode = await db.get_user_setting(job["user_id"], "archive_mode")
-        if mode == "ask":
-            await db.set_job_status(job_id, "awaiting_choice")
-            await _edit_status(
-                app, job,
-                texts.archive_choice(name, archive_path),
-                archive_choice_kb(job_id),
+        def progress_cb(done_bytes: int, total_bytes: int):
+            now = time.time()
+            if now - last_edit["t"] < 3.0:
+                return
+            last_edit["t"] = now
+            asyncio.run_coroutine_threadsafe(
+                _edit_status(app, job, texts.progress_download(
+                    name, done_before[0] + done_bytes, size),
+                    cancel_kb(job_id)),
+                loop,
             )
-            return  # resumed from the callback handler
-        extract = (mode == "extract")
-    else:
-        extract = False
 
-    await db.set_job_status(job_id, "uploading")
-    await _process_and_upload(app, job, dest_dir, analysis, extract_archive=extract)
+        for idx, url in enumerate(urls, 1):
+            part_label = f" ({idx}/{len(urls)})" if multi else ""
+            for attempt in range(1, RETRY_ATTEMPTS + 1):
+                try:
+                    await asyncio.to_thread(
+                        downloader.download, url, dest_dir, progress_cb
+                    )
+                    break
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    log.warning("download attempt %s failed%s: %s", attempt, part_label, e)
+                    if "blocked" in str(e).lower():
+                        await db.set_job_status(job_id, "failed", error=str(e)[:300])
+                        await _edit_status(app, job, texts.error_blocked())
+                        return
+                    if attempt == RETRY_ATTEMPTS:
+                        await db.set_job_status(job_id, "failed", error=str(e)[:300])
+                        await _edit_status(app, job, texts.error_download(e))
+                        return
+                    await asyncio.sleep(2 ** attempt)
+            done_before[0] += infos[idx - 1].get("size", 0) or 0
+
+        await db.set_job_status(job_id, "processing")
+
+        # ── 3. AI / OpenRouter Processing (if enabled) ───────────
+        from config import OPENROUTER_API_KEY
+        ai_files = None
+        if OPENROUTER_API_KEY:
+            try:
+                from megabot.ai.pipeline_hook import run_ai_pipeline
+                await _edit_status(app, job, texts.status_ai_analyzing(name), cancel_kb(job_id))
+                user_prompt = job.get("prompt", "")
+                ai_files = await run_ai_pipeline(app, job, dest_dir, user_prompt, _edit_status)
+            except Exception as e:
+                log.warning("AI processing hook failed: %s", e)
+                ai_files = None
+
+        if ai_files:
+            await db.set_job_status(job_id, "uploading")
+            await _upload_files(app, job, name, ai_files)
+            return
+
+        await _edit_status(app, job, texts.status_analyzing(name), cancel_kb(job_id))
+
+        # ── 4. analyze downloaded content (rule-based fallback) ─
+        from megabot.analyzers.classify import classify
+        analysis = await asyncio.to_thread(classify, dest_dir)
+        kind = analysis["kind"]
+
+        # ── 5. branch on content kind ────────────────────────────
+        if kind == "archive":
+            # lone middle volume of a split set → try to rescue the missing
+            # volumes from the user's own MEGA account before giving up
+            from megabot.analyzers.classify import lone_continuation_volume
+            if len(analysis["archives"]) == 1 and \
+                    lone_continuation_volume(analysis["archives"][0]):
+                lone = analysis["archives"][0]
+                await _edit_status(app, job, texts.status_rescue_search(), cancel_kb(job_id))
+
+                def rescue_cb(d, t, label=""):
+                    now = time.time()
+                    if now - last_edit["t"] < 3.0:
+                        return
+                    last_edit["t"] = now
+                    asyncio.run_coroutine_threadsafe(
+                        _edit_status(app, job, texts.progress_rescue(label, d, t),
+                                     cancel_kb(job_id)),
+                        loop,
+                    )
+
+                rescued = await asyncio.to_thread(
+                    downloader.rescue_siblings, lone, dest_dir, rescue_cb)
+                if rescued:
+                    analysis = await asyncio.to_thread(classify, dest_dir)
+                    kind = analysis["kind"]
+                    await _edit_status(app, job, texts.status_analyzing(name), cancel_kb(job_id))
+                else:
+                    # Don't refuse the job: a lone middle volume usually still
+                    # holds fully readable files (WinRAR opens it for the same
+                    # reason). Continue into the normal archive flow — extraction
+                    # is best-effort now and recovers whatever is inside.
+                    log.info("no sibling volumes in account — best-effort extract of %s",
+                             os.path.basename(lone))
+
+        if kind == "archive":
+            archive_path = analysis["archives"][0]
+            mode = await db.get_user_setting(job["user_id"], "archive_mode")
+            if mode == "ask":
+                await db.set_job_status(job_id, "awaiting_choice")
+                await _edit_status(
+                    app, job,
+                    texts.archive_choice(name, archive_path),
+                    archive_choice_kb(job_id),
+                )
+                return  # resumed from the callback handler
+            extract = (mode == "extract")
+        else:
+            extract = False
+
+        await db.set_job_status(job_id, "uploading")
+        await _process_and_upload(app, job, dest_dir, analysis, extract_archive=extract)
+
+    finally:
+        # Automatically remove downloaded files after job finishes/fails
+        # to save VPS disk space, unless job is awaiting user choice
+        try:
+            import shutil
+            job_doc = await db.get_job(job_id)
+            if not (job_doc and job_doc.get("status") == "awaiting_choice"):
+                if os.path.exists(dest_dir):
+                    shutil.rmtree(dest_dir, ignore_errors=True)
+                    log.info("Cleaned up job download dir: %s", dest_dir)
+        except Exception as ce:
+            log.warning("Cleanup error for %s: %s", dest_dir, ce)
 
 
 async def _process_and_upload(app, job, dest_dir: str, analysis: dict,
