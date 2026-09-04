@@ -143,6 +143,27 @@ class Database:
         query = {"status": status} if status else {}
         return await self.jobs.count_documents(query)
 
+    async def list_jobs(self, user_id: int = None, status: str = None, limit: int = 10) -> list[dict]:
+        if self.jobs is None:
+            return []
+        query = {}
+        if user_id:
+            query["user_id"] = int(user_id)
+        if status and status != "all":
+            query["status"] = status
+        try:
+            cursor = self.jobs.find(query).sort("created_at", -1).limit(limit)
+            return await cursor.to_list(length=limit)
+        except Exception as e:
+            log.warning("list_jobs error: %s", e)
+            return []
+
+    async def delete_job_record(self, job_id: str) -> bool:
+        if self.jobs is None:
+            return False
+        res = await self.jobs.delete_one({"_id": job_id})
+        return res.deleted_count > 0
+
     async def active_jobs_for_user(self, user_id: int) -> int:
         if self.jobs is None:
             return 0
@@ -261,6 +282,16 @@ class Database:
                 {"$set": {**meta, "cached_at": datetime.utcnow()}},
                 upsert=True,
             )
+
+    async def clear_link_cache(self) -> int:
+        if self.link_cache is None:
+            return 0
+        try:
+            res = await self.link_cache.delete_many({})
+            return res.deleted_count
+        except Exception as e:
+            log.warning("clear_link_cache error: %s", e)
+            return 0
 
     async def get_db_stats(self):
         if self.db is None:
