@@ -4,27 +4,29 @@ from megabot.processors.uploader import human_size, make_progress_bar
 LOGO = "⚡"
 
 WELCOME = """<blockquote>{} <b>MegaBot</b></blockquote>
-🚀 <b>Your MEGA → Telegram pipeline.</b>
+🚀 <b>Your MEGA & MediaFire → Telegram pipeline.</b>
 
-Send me any <b>MEGA link</b> and I will:
-📥 Download it with my MEGA account
+Send me any <b>MEGA or MediaFire link</b> and I will:
+📥 Download it at maximum speed
 🔍 Analyze what's inside
-📦 Archive? You choose — upload as-is or decompress
-🖼️ Image set? I merge it into one ordered <b>PDF</b>
-🎬 Videos? Uploaded sequentially, ready to stream
+📦 Archive? Auto-extracted (ZIP/RAR/7Z) or uploaded as-is
+🖼️ Image set? Merged into one clean <b>PDF</b>
+🎬 Videos? Uploaded sequentially, stream-ready
 
 <b>Just paste a link to begin</b> 👇""".format(LOGO)
 
 HELP = """<blockquote>{} <b>How to use MegaBot</b></blockquote>
-1️⃣ Paste one or more MEGA links (file or folder)
+1️⃣ Paste one or more MEGA or MediaFire links (file or folder)
 2️⃣ Watch the live status card with progress bar
-3️⃣ If it's an archive — pick what to do with the buttons
+3️⃣ Archives (ZIP, RAR, 7Z) are automatically extracted
 4️⃣ Receive your files right here
 
-<b>Supported:</b> zip, rar, 7z, tar • images → PDF • videos • any file
+<b>Supported hosts:</b> MEGA.nz • MediaFire.com
+<b>Supported formats:</b> zip, rar, 7z, tar • images → PDF • videos • documents
 
 <b>Commands</b>
 /start — start the bot
+/agent — talk to AI Agent & manage jobs/files
 /login — connect your MEGA account
 /logout — disconnect it
 /settings — your preferences""".format(LOGO)
@@ -33,8 +35,10 @@ BANNED = "🚫 You are banned from using this bot."
 
 ERROR_GENERIC = "❌ Something went wrong while processing your job. Please try again."
 
-NO_LINK = ("🤔 I couldn't find a valid MEGA link in that message.\n"
-           "Send me a link formatted like:\n<code>https://mega.nz/file/...#...</code>")
+NO_LINK = ("🤔 I couldn't find a valid MEGA or MediaFire link in that message.\n"
+           "Send me a link formatted like:\n"
+           "• <code>https://mega.nz/file/...#...</code>\n"
+           "• <code>https://www.mediafire.com/file/...</code>")
 
 BUSY = ("⏳ You already have an active job. Please wait for it to finish — "
         "max {limit} job(s) at a time.")

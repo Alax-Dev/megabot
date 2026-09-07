@@ -39,28 +39,19 @@ async def run_job(app, job: dict):
     urls = job["url"] if isinstance(job.get("url"), list) else [job["url"]]
     multi = len(urls) > 1
 
-    from megabot.downloaders.mega import MegaDownloader
+    from megabot.downloaders import get_downloader
 
     # ── 1. probe ─────────────────────────────────────────────
     await db.set_job_status(job_id, "downloading")
     display_url = urls[0] if not multi else f"{len(urls)} links (batch)"
     await _edit_status(app, job, texts.status_queued(display_url), cancel_kb(job_id))
 
-    # use the user's own MEGA account if they logged in via /login;
-    # the cached session (sid) avoids a fresh MEGA login on every job —
-    # repeated logins are what trigger MEGA's suspicious-login lockouts
-    account = await db.get_mega_account(job["user_id"])
-    session = await db.get_mega_session(job["user_id"])
-    downloader = MegaDownloader(
-        email=account["email"] if account else None,
-        password=account["password"] if account else None,
-        saved_session=session,
-    )
+    downloader = await get_downloader(urls[0], user_id=job["user_id"])
     infos = []
     for attempt in range(1, RETRY_ATTEMPTS + 1):
         try:
             await asyncio.to_thread(downloader.login)
-            if downloader.session_fresh:
+            if hasattr(downloader, "session_fresh") and downloader.session_fresh:
                 state = downloader.session_state()
                 await db.save_mega_session(job["user_id"],
                                            state["sid"], state["master_key"])

@@ -7,7 +7,7 @@ from pyrogram.types import Message
 from config import MAX_JOBS_PER_USER
 from megabot.core.database import db
 from megabot.core.job_queue import job_queue
-from megabot.downloaders.mega import extract_mega_links, link_key
+from megabot.downloaders import extract_supported_links, get_link_key
 from megabot.ui import texts
 
 
@@ -40,7 +40,7 @@ async def on_link(client: Client, message: Message):
         await message.reply_text(texts.BANNED)
         return
 
-    links = extract_mega_links(message.text)
+    links = extract_supported_links(message.text)
     if not links:
         # If user typed an unrecognized slash command, ignore silently
         if message.text.startswith("/"):
@@ -75,18 +75,18 @@ async def on_link(client: Client, message: Message):
         job = await db.create_job(job_id, user_id, message.chat.id, links,
                                   status_msg.id, prompt=user_prompt)
         for u in links:
-            await db.cache_link(link_key(u), {"job_id": job_id, "url": u})
+            await db.cache_link(get_link_key(u), {"job_id": job_id, "url": u})
         await job_queue.submit(job)
         return
 
     for url in links:
-        # folder links need the full handle#key — refuse truncated ones early
-        if "/folder/" in url and not RawMega.parse_folder_url(url):
+        # MEGA folder links need the full handle#key — refuse truncated ones early
+        if "mega." in url and "/folder/" in url and not RawMega.parse_folder_url(url):
             await message.reply_text(texts.FOLDER_LINK_TRUNCATED)
             continue
 
         # Check if this exact link is currently being processed
-        key = link_key(url)
+        key = get_link_key(url)
         cached = await db.get_cached_link(key)
         if cached:
             cached_job_id = cached.get("job_id")
