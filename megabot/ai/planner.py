@@ -41,14 +41,15 @@ Respond with valid JSON only:
 }
 
 DECISION HEURISTICS:
-- If the user gave an explicit instruction (e.g., "convert to pdf", "extract only videos", "zip all files", "delete samples", "remove txt"), STRICTLY prioritize fulfilling the user's intent!
+- Any archive (.zip, .rar, .7z, .tar, .gz): ALWAYS emit action "extract_archive" to decompress the contents so the user gets the files inside, UNLESS the user explicitly requested "keep archive", "do not extract", or "as-is".
+- If the user gave an explicit instruction (e.g., "unzip", "extract", "convert to pdf", "extract only videos", "zip all files", "delete samples", "remove txt"), STRICTLY prioritize fulfilling the user's intent!
 - If user requested deleting/removing files or discarding certain formats, emit action "delete_file".
-- If the user gave NO explicit instruction (default mode):
+- If the user gave NO explicit instruction:
+  - Archive (.zip/.rar/.7z): emit action "extract_archive".
   - ≥ 3 images and no video: action "images_to_pdf".
-  - Lone archive: action "extract_archive" if it contains media/images/documents, or leave as archive if it contains programs/unknowns.
   - Video files: keep videos ready for stream upload.
   - Many mixed/loose files (>10 files): bundle them into a zip with "create_zip" for clean delivery.
-  - Single file: upload as-is.
+  - Single non-archive file (like a single .mp4 or .pdf): upload as-is.
 """
 
 

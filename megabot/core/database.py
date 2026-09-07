@@ -178,9 +178,9 @@ class Database:
     # ══════════════════════════════════════════════════════
 
     DEFAULT_SETTINGS = {
-        "archive_mode": "ask",       # ask | archive | extract
-        "image_pdf": True,           # auto-merge image sets into PDF
-        "video_thumbs": True,        # generate video thumbnails
+        "archive_mode": "extract",     # extract by default (unzip archives)
+        "image_pdf": True,             # auto-merge image sets into PDF
+        "video_thumbs": True,          # generate video thumbnails
     }
 
     async def get_user_setting(self, user_id: int, key: str):

@@ -87,6 +87,12 @@ async def execute_plan(app, job: dict, dest_dir: str, plan: dict,
                         cancel_kb(job_id)
                     )
                     await asyncio.to_thread(safe_extract, archive_path, out_dir)
+                    # Remove the original compressed archive so it is not uploaded alongside extracted files
+                    try:
+                        os.remove(archive_path)
+                        log.info("Removed archive %s after successful extraction", archive_path)
+                    except Exception as re:
+                        log.warning("Could not remove archive after extraction: %s", re)
                     # Refresh file list
                     current_files = _list_all_files(canonical_dest)
 
@@ -196,9 +202,18 @@ async def execute_plan(app, job: dict, dest_dir: str, plan: dict,
                 if req_uploads and isinstance(req_uploads, list):
                     explicit_uploads = []
                     for rf in req_uploads:
+                        if not rf or not isinstance(rf, str):
+                            continue
                         candidate = os.path.join(canonical_dest, rf)
                         if os.path.isfile(candidate):
                             explicit_uploads.append(validate_sandbox_path(canonical_dest, candidate))
+                            continue
+                        # Fallback: check if the file lives inside a subfolder like extracted/
+                        clean_base = os.path.basename(rf).lower()
+                        for cf in current_files:
+                            if os.path.basename(cf).lower() == clean_base:
+                                explicit_uploads.append(cf)
+                                break
 
         except SecurityViolation as sv:
             log.error("AI action blocked by security jail: %s", sv)

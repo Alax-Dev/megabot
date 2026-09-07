@@ -205,7 +205,20 @@ async def run_job(app, job: dict):
         if kind == "archive":
             archive_path = analysis["archives"][0]
             mode = await db.get_user_setting(job["user_id"], "archive_mode")
-            if mode == "ask":
+            u_prompt = (job.get("prompt") or "").lower()
+
+            wants_extract = any(w in u_prompt for w in ["unzip", "extract", "unpack", "decompress"])
+            wants_as_is = any(w in u_prompt for w in ["as is", "as-is", "don't extract", "keep archive", "keep zip"])
+
+            if wants_extract:
+                extract = True
+            elif wants_as_is:
+                extract = False
+            elif mode == "extract":
+                extract = True
+            elif mode == "archive":
+                extract = False
+            elif mode == "ask":
                 await db.set_job_status(job_id, "awaiting_choice")
                 await _edit_status(
                     app, job,
@@ -213,7 +226,8 @@ async def run_job(app, job: dict):
                     archive_choice_kb(job_id),
                 )
                 return  # resumed from the callback handler
-            extract = (mode == "extract")
+            else:
+                extract = True
         else:
             extract = False
 

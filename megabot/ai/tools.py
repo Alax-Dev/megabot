@@ -59,6 +59,14 @@ TOOL_DEFINITIONS = [
         }
     },
     {
+        "name": "unzip_files",
+        "description": "Unzip or extract archive files (ZIP, RAR, 7Z, TAR). Can extract a job's downloaded archive or enable automatic unzipping for all incoming MEGA downloads.",
+        "parameters": {
+            "job_id": "Optional job ID to unzip files for immediately.",
+            "enable_auto_unzip": "Optional boolean: set true to enable automatic extraction for all future downloads."
+        }
+    },
+    {
         "name": "clear_cache",
         "description": "Clear duplicate link cache so any previously processed MEGA link can be submitted again.",
         "parameters": {}
@@ -255,6 +263,36 @@ async def execute_tool(tool_name: str, params: dict, context: dict) -> dict:
 
             await db.set_user_setting(user_id, key, val)
             return {"status": "success", "message": f"Setting '{key}' successfully updated to {val}."}
+
+        elif tool_name == "unzip_files":
+            # Enable auto-extract in user preferences
+            await db.set_user_setting(user_id, "archive_mode", "extract")
+            msg = "✅ Automatic archive extraction (unzip) is now enabled for your MEGA downloads."
+
+            job_id = str(params.get("job_id", "")).strip()
+            if job_id:
+                job_dir = os.path.join(DOWNLOAD_DIR, job_id)
+                if os.path.isdir(job_dir):
+                    from megabot.processors.archives import safe_extract
+                    extracted_count = 0
+                    for root, _, files in os.walk(job_dir):
+                        for f in files:
+                            ext = os.path.splitext(f)[1].lower()
+                            if ext in [".zip", ".rar", ".7z", ".tar", ".gz", ".xz", ".bz2"]:
+                                arc_path = os.path.join(root, f)
+                                out = os.path.join(job_dir, "extracted")
+                                try:
+                                    safe_extract(arc_path, out)
+                                    os.remove(arc_path)
+                                    extracted_count += 1
+                                except Exception as ee:
+                                    log.warning("Tool unzip failed on %s: %s", arc_path, ee)
+                    if extracted_count:
+                        msg += f" Successfully unzipped {extracted_count} archive(s) in job {job_id}."
+                    else:
+                        msg += f" No archive files currently found in job directory {job_id}."
+
+            return {"status": "success", "message": msg}
 
         elif tool_name == "clear_cache":
             deleted = await db.clear_link_cache()

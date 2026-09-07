@@ -16,14 +16,14 @@ log = logging.getLogger(__name__)
 _agent_msg_ids = set()
 
 TOOLS_SYSTEM_PROMPT = f"""You are the autonomous MegaBot AI Agent on Telegram.
-You have direct access to tools to manage jobs, tasks, files, settings, and disk storage.
+You have direct access to tools to manage jobs, tasks, files, unzipping/extracting archives, settings, and disk storage.
 
 AVAILABLE TOOLS:
 {json.dumps(TOOL_DEFINITIONS, indent=2)}
 
 INSTRUCTIONS:
 1. Carefully analyze the user's intent:
-   - If the user wants to take action (e.g., list/check jobs, cancel a job, delete files, clean disk, check stats, change settings, clear cache, check account, or manage tasks):
+   - If the user wants to take action (e.g., unzip/extract files, list/check jobs, cancel a job, delete files, clean disk, check stats, change settings, clear cache, check account, or manage tasks):
      Respond with JSON:
      {{
        "action": "call_tool",
@@ -31,11 +31,11 @@ INSTRUCTIONS:
        "parameters": {{ ... }},
        "thought": "<brief reason for calling this tool>"
      }}
-   - If the user is asking general questions, chatting, or asking about features:
+   - If the user is asking general questions, chatting, or asking about features (e.g. asking if you can unzip, what tools you have, etc.):
      Respond with JSON:
      {{
        "action": "reply",
-       "response": "<friendly, clear response formatted in Telegram HTML (use <b>, <i>, <code>, <blockquote>)>"
+       "response": "<friendly, clear response formatted in Telegram HTML (use <b>, <i>, <code>, <blockquote>). Note: You DO have tools to unzip and extract archives (ZIP, RAR, 7Z, TAR) and delete files!>"
      }}
 2. Respond with valid JSON only. Do not enclose in markdown ticks if possible.
 """

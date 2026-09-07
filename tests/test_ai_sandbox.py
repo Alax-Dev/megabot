@@ -173,6 +173,38 @@ class TestAISecurityAndPrivacy(unittest.TestCase):
         self.assertTrue(os.path.exists(f1))          # keep.mp4 was preserved
         self.assertTrue(os.path.exists(f_outside))   # outside.txt was NOT deleted (sandboxed)
 
+    def test_extract_archive_replaces_archive_with_extracted_files(self):
+        """extract_archive safely extracts contents and deletes the original zip container."""
+        import asyncio
+        import zipfile
+        from megabot.ai.executor import execute_plan
+
+        # Create a test zip file
+        zip_path = os.path.join(self.job_dir, "package.zip")
+        with zipfile.ZipFile(zip_path, "w") as zf:
+            zf.writestr("inner_video.mp4", "fake video data")
+            zf.writestr("inner_readme.txt", "readme")
+
+        async def mock_edit(app, job, text, kb=None):
+            pass
+
+        job = {"_id": "test_job_zip", "chat_id": 123, "message_id": 456}
+
+        plan = {
+            "summary": "Extract package.zip",
+            "actions": [
+                {"action": "extract_archive", "file": "package.zip"},
+                {"action": "upload", "files": ["inner_video.mp4"]}
+            ]
+        }
+
+        res = asyncio.run(execute_plan(None, job, self.job_dir, plan, mock_edit))
+        # The zip itself must have been deleted so it is not sent as-is
+        self.assertFalse(os.path.exists(zip_path))
+        # The inner video must be in upload list
+        self.assertEqual(len(res), 1)
+        self.assertTrue(res[0].endswith("inner_video.mp4"))
+
 
 if __name__ == "__main__":
     unittest.main()
