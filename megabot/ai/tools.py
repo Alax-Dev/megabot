@@ -18,9 +18,9 @@ log = logging.getLogger(__name__)
 TOOL_DEFINITIONS = [
     {
         "name": "start_download",
-        "description": "Download one or more files/folders from MEGA or MediaFire. Automatically queues and tracks the download with optional custom instructions (e.g., unzip archives, merge images into PDF, filter files, keep archive).",
+        "description": "Download one or more files/folders from MEGA, MediaFire, or MP4Upload. Automatically queues and tracks the download with optional custom instructions (e.g., unzip archives, merge images into PDF, filter files, keep archive).",
         "parameters": {
-            "urls": "A list of MEGA or MediaFire URL strings, or a single URL string (required).",
+            "urls": "A list of MEGA, MediaFire, or MP4Upload URL strings, or a single URL string (required).",
             "instruction": "Optional instructions for what to do with the files (e.g. 'unzip archive', 'extract only videos', 'convert images to pdf', 'delete samples')."
         }
     },
@@ -93,7 +93,7 @@ TOOL_DEFINITIONS = [
     },
     {
         "name": "clear_cache",
-        "description": "Clear duplicate link cache so any previously downloaded MEGA or MediaFire link can be processed again immediately.",
+        "description": "Clear duplicate link cache so any previously downloaded MEGA, MediaFire, or MP4Upload link can be processed again immediately.",
         "parameters": {}
     },
     {
@@ -140,7 +140,7 @@ async def execute_tool(tool_name: str, params: dict, context: dict) -> dict:
             if not valid_urls:
                 return {
                     "status": "error",
-                    "message": "No valid MEGA or MediaFire links found. Links must start with mega.nz or mediafire.com."
+                    "message": "No valid MEGA, MediaFire, or MP4Upload links found. Links must start with mega.nz, mediafire.com, or mp4upload.com."
                 }
 
             valid_urls = valid_urls[:5]  # limit 5 per batch

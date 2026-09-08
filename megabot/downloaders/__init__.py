@@ -9,11 +9,17 @@ from megabot.downloaders.mediafire import (
     is_mediafire_link,
     mediafire_link_key,
 )
+from megabot.downloaders.mp4upload import (
+    MP4UploadDownloader,
+    extract_mp4upload_links,
+    is_mp4upload_link,
+    mp4upload_link_key,
+)
 
 
 def extract_supported_links(text: str) -> list[str]:
     """
-    Extract all supported download links (MEGA & MediaFire) from text.
+    Extract all supported download links (MEGA, MediaFire, MP4Upload) from text.
     Preserves order and deduplicates.
     """
     if not text:
@@ -21,11 +27,12 @@ def extract_supported_links(text: str) -> list[str]:
 
     mega_links = extract_mega_links(text)
     mf_links = extract_mediafire_links(text)
+    mp4u_links = extract_mp4upload_links(text)
 
     # Combine and deduplicate
     combined = []
     seen = set()
-    for link in mega_links + mf_links:
+    for link in mega_links + mf_links + mp4u_links:
         if link not in seen:
             seen.add(link)
             combined.append(link)
@@ -35,6 +42,8 @@ def extract_supported_links(text: str) -> list[str]:
 
 def get_link_key(url: str) -> str:
     """Return a unique, stable cache identifier for any supported link."""
+    if is_mp4upload_link(url):
+        return mp4upload_link_key(url)
     if is_mediafire_link(url):
         return mediafire_link_key(url)
     return mega_link_key(url)
@@ -44,13 +53,16 @@ def is_supported_link(url: str) -> bool:
     """Check if a URL is handled by any supported downloader."""
     if not url:
         return False
-    return is_mediafire_link(url) or "mega." in url.lower()
+    return is_mp4upload_link(url) or is_mediafire_link(url) or "mega." in url.lower()
 
 
 async def get_downloader(url: str, user_id: Optional[int] = None) -> BaseDownloader:
     """
     Instantiate and return the appropriate downloader instance for the URL.
     """
+    if is_mp4upload_link(url):
+        return MP4UploadDownloader()
+
     if is_mediafire_link(url):
         return MediaFireDownloader()
 

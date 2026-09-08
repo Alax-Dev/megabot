@@ -7,19 +7,19 @@ WELCOME = """<blockquote>{} <b>MegaBot AI</b></blockquote>
 🤖 <b>Your Autonomous Cloud Downloader & File Assistant.</b>
 
 I am powered by an intelligent AI Agent with real tools to:
-📥 <b>Download:</b> MEGA.nz & MediaFire.com at maximum speed
+📥 <b>Download:</b> MEGA.nz, MediaFire.com & MP4Upload.com at maximum speed
 📦 <b>Smart Unzip:</b> Automatically extracts ZIP, RAR, 7Z, and TAR archives
 🖼️ <b>Image Sets:</b> Merged into clean, ordered <b>PDFs</b>
 🎬 <b>Videos:</b> Stream-ready uploads with thumbnails
 🛠️ <b>Autonomous Tools:</b> Unzip files, delete storage, clean disk, and manage jobs!
 
 💬 <b>Talk to me naturally:</b>
-• Paste any MEGA or MediaFire link (with or without instructions)
+• Paste any MEGA, MediaFire, or MP4Upload link
 • Or ask me to unzip files, delete storage, check stats, or cancel jobs!""".format(LOGO)
 
 HELP = """<blockquote>{} <b>MegaBot AI Guide</b></blockquote>
 🤖 <b>How to Use Me:</b>
-1️⃣ <b>Paste any link:</b> Send MEGA or MediaFire links (single or batch)
+1️⃣ <b>Paste any link:</b> Send MEGA, MediaFire, or MP4Upload links (single or batch)
 2️⃣ <b>Add custom instructions:</b> E.g. <i>"unzip and keep only videos"</i>
 3️⃣ <b>Live progress:</b> Track downloads in real-time
 4️⃣ <b>Instant Delivery:</b> Receive your files directly in Telegram!
@@ -31,7 +31,7 @@ HELP = """<blockquote>{} <b>MegaBot AI Guide</b></blockquote>
 • <i>"Show my jobs"</i> — lists active and queued downloads
 • <i>"Cancel job <id>"</i> — stops a running job
 
-<b>Supported Hosts:</b> MEGA.nz • MediaFire.com
+<b>Supported Hosts:</b> MEGA.nz • MediaFire.com • MP4Upload.com
 <b>Supported Formats:</b> zip, rar, 7z, tar, iso • mp4, mkv • images → PDF • docs
 
 <b>Commands:</b>
@@ -45,10 +45,11 @@ BANNED = "🚫 You are banned from using this bot."
 
 ERROR_GENERIC = "❌ Something went wrong while processing your job. Please try again."
 
-NO_LINK = ("🤔 I couldn't find a valid MEGA or MediaFire link in that message.\n"
+NO_LINK = ("🤔 I couldn't find a valid download link in that message.\n"
            "Send me a link formatted like:\n"
            "• <code>https://mega.nz/file/...#...</code>\n"
-           "• <code>https://www.mediafire.com/file/...</code>")
+           "• <code>https://www.mediafire.com/file/...</code>\n"
+           "• <code>https://www.mp4upload.com/...</code>")
 
 BUSY = ("⏳ You already have an active job. Please wait for it to finish — "
         "max {limit} job(s) at a time.")

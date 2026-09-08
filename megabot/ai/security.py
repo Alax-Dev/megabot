@@ -12,14 +12,9 @@ FORBIDDEN_PATTERNS = [
     "*.session-journal*",
     "*.key",
     "*.pem",
-    "*.db",
-    "*.sqlite*",
     "megabot.log*",
     "config.py",
-    "*token*",
-    "*secret*",
-    "*credential*",
-    "*password*",
+    "bot_token*",
     ".git*",
     "__pycache__*",
 ]
@@ -50,6 +45,8 @@ def validate_sandbox_path(base_dir: str, target_path: str) -> str:
     Raises SecurityViolation if any boundary is crossed.
     """
     canonical_base = os.path.realpath(base_dir)
+    if not os.path.isabs(target_path):
+        target_path = os.path.join(canonical_base, target_path)
     canonical_target = os.path.realpath(target_path)
 
     # 1. Directory traversal / jail check

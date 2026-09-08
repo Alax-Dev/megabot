@@ -39,6 +39,18 @@ class TestAISecurityAndPrivacy(unittest.TestCase):
         with self.assertRaises(SecurityViolation):
             validate_sandbox_path(self.job_dir, os.path.join(self.job_dir, "../../etc/passwd"))
 
+    def test_relative_path_resolved_inside_sandbox(self):
+        """Relative paths (e.g. 'video.mp4' or 'sub/doc.pdf') resolve cleanly inside sandbox."""
+        resolved = validate_sandbox_path(self.job_dir, "video.mp4")
+        self.assertEqual(resolved, os.path.join(os.path.realpath(self.job_dir), "video.mp4"))
+
+        sub_resolved = validate_sandbox_path(self.job_dir, "extracted/subfolder/file.txt")
+        self.assertEqual(sub_resolved, os.path.join(os.path.realpath(self.job_dir), "extracted/subfolder/file.txt"))
+
+        # Relative traversal escaping sandbox must still be blocked
+        with self.assertRaises(SecurityViolation):
+            validate_sandbox_path(self.job_dir, "../outside.txt")
+
     def test_secret_blacklist_blocks_env(self):
         """Forbidden secret files (.env, session, etc.) are blocked."""
         self.assertTrue(is_forbidden_file(".env"))
