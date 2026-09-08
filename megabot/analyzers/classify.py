@@ -76,7 +76,7 @@ def _walk_files(root: str) -> list[str]:
     for dirpath, _dirs, names in os.walk(root):
         for n in names:
             path = os.path.join(dirpath, n)
-            if os.path.isfile(path):
+            if os.path.isfile(path) and os.path.getsize(path) > 0:
                 files.append(path)
     return files
 

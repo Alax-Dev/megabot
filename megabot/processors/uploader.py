@@ -47,6 +47,7 @@ class UploadProgress:
         self.app = app
         self.job = job
         self.files = files
+        self.last_error: str | None = None
         self._last_edit = 0.0
         self._start = 0.0
         self._loop = None
@@ -90,13 +91,20 @@ class UploadProgress:
     async def send(self, path: str, thumbs_enabled: bool = True) -> bool:
         """Upload one file. Returns True on success."""
         if not os.path.exists(path):
+            self.last_error = f"File not found: {os.path.basename(path)}"
+            log.error("upload skipped: %s", self.last_error)
+            return False
+
+        size = os.path.getsize(path)
+        if size == 0:
+            self.last_error = f"File is empty (0 bytes): {os.path.basename(path)}"
+            log.error("upload skipped: %s", self.last_error)
             return False
 
         self._loop = asyncio.get_running_loop()   # capture bot's loop for the cb
         self._current_name = os.path.basename(path)
         self._start = time.time()
         self._last_edit = 0.0
-        size = os.path.getsize(path)
         ext = os.path.splitext(path)[1].lower()
         caption = f"📁 <b>{os.path.basename(path)}</b> ({human_size(size)})"
 
@@ -122,6 +130,7 @@ class UploadProgress:
                 )
             return True
         except Exception as e:
+            self.last_error = f"{type(e).__name__}: {e}"
             log.error("upload failed for %s: %s", path, e)
             await self._edit(f"⚠️ Failed to upload <b>{os.path.basename(path)}</b>\n<code>{e}</code>")
             return False

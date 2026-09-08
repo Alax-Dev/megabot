@@ -4,7 +4,7 @@ ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
-    unrar-free \
+    unar \
     p7zip-full \
     && rm -rf /var/lib/apt/lists/*
 

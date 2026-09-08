@@ -107,6 +107,8 @@ def extract_safe_metadata(job_dir: str) -> dict:
                 continue
 
             size = os.path.getsize(safe_path)
+            if size == 0:
+                continue
             total_bytes += size
             rel_path = os.path.relpath(safe_path, canonical_job_dir)
             ext = os.path.splitext(name)[1].lower()

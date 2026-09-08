@@ -493,10 +493,23 @@ async def execute_tool(tool_name: str, params: dict, context: dict) -> dict:
                                 out = os.path.join(job_dir, "extracted")
                                 try:
                                     safe_extract(arc_path, out)
-                                    os.remove(arc_path)
-                                    extracted_count += 1
+                                    extracted_files = [
+                                        os.path.join(dp, fn)
+                                        for dp, _, fns in os.walk(out)
+                                        for fn in fns
+                                        if os.path.isfile(os.path.join(dp, fn)) and os.path.getsize(os.path.join(dp, fn)) > 0
+                                    ]
+                                    if extracted_files:
+                                        try:
+                                            os.remove(arc_path)
+                                        except Exception:
+                                            pass
+                                        extracted_count += 1
+                                    else:
+                                        shutil.rmtree(out, ignore_errors=True)
                                 except Exception as ee:
                                     log.warning("Tool unzip failed on %s: %s", arc_path, ee)
+                                    shutil.rmtree(out, ignore_errors=True)
                     if extracted_count:
                         msg += f" Successfully unzipped {extracted_count} archive(s) in job {job_id}."
                     else:

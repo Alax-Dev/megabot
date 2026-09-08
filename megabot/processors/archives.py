@@ -42,23 +42,37 @@ def safe_extract(archive_path: str, dest_dir: str) -> str:
         import subprocess
 
         def _has_output():
-            for _dp, _dn, names in os.walk(dest_dir):
-                if names:
-                    return True
+            for root, _, names in os.walk(dest_dir):
+                for name in names:
+                    fp = os.path.join(root, name)
+                    if os.path.isfile(fp) and os.path.getsize(fp) > 0:
+                        return True
             return False
 
-        # Best-effort extraction, same spirit as WinRAR opening a single
-        # volume: files stored entirely inside ONE volume are readable even
-        # without the other volumes, while the tool still exits with a fatal
-        # code about the missing parts. So tolerate non-zero exits and keep
-        # whatever made it to disk; only fail when nothing was recovered.
+        def _clean_dir(path):
+            for entry in os.scandir(path):
+                if entry.is_dir(follow_symlinks=False):
+                    _sh.rmtree(entry.path, ignore_errors=True)
+                else:
+                    try:
+                        os.remove(entry.path)
+                    except OSError:
+                        pass
+
+        # We try modern extractors in order:
+        # 1. unar (The Unarchiver) - best RAR5 & modern split RAR support
+        # 2. 7z (p7zip)
+        # 3. unrar / unrar-free
         attempts = []
+        if _sh.which("unar"):
+            attempts.append(["unar", "-o", dest_dir, "-D", "-f", archive_path])
         if _sh.which("7z"):
             attempts.append(["7z", "x", f"-o{dest_dir}", "-y", archive_path])
         unrar_tool = next((t for t in ("unrar", "unrar-free") if _sh.which(t)), None)
         if unrar_tool:
             attempts.append([unrar_tool, "x", "-y", "-o+", archive_path,
                              dest_dir + os.sep])
+
         for cmd in attempts:
             try:
                 subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL,
@@ -67,11 +81,19 @@ def safe_extract(archive_path: str, dest_dir: str) -> str:
                 pass  # partial recovery is fine — check what landed on disk
             if _has_output():
                 break
+            # Clean up failed / 0-byte stub files before next attempt
+            _clean_dir(dest_dir)
         else:
             raise RuntimeError(
                 "No extractor could read anything from this RAR — it may be "
                 "a split volume whose content lives in another part, "
                 "corrupted, or password-protected.")
+
+        # Post-extraction security check: ensure no member escaped dest_dir
+        for root, _, names in os.walk(dest_dir):
+            for n in names:
+                fp = os.path.join(root, n)
+                _validate(os.path.relpath(fp, dest_dir), dest_dir)
 
     elif ext == ".7z":
         import py7zr

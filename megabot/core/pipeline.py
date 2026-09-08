@@ -249,28 +249,31 @@ async def _process_and_upload(app, job, dest_dir: str, analysis: dict,
     pdf_path = None
 
     if kind == "archive" and extract_archive:
+        import shutil
         from megabot.processors.archives import safe_extract
         archive_path = analysis["archives"][0]
         out_dir = os.path.join(dest_dir, "extracted")
         os.makedirs(out_dir, exist_ok=True)
         await _edit_status(app, job, texts.status_extracting(analysis["name"]), cancel_kb(job_id))
+        extract_succeeded = False
         try:
             await asyncio.to_thread(safe_extract, archive_path, out_dir)
+            from megabot.analyzers.classify import classify
+            inner = await asyncio.to_thread(classify, out_dir)
+            total_extracted = (len(inner["archives"]) + len(inner["videos"]) +
+                               len(inner["images"]) + len(inner["others"]))
+            if total_extracted > 0:
+                extract_succeeded = True
+                log.info("archive %s extracted → kind=%s, %d file(s)",
+                         archive_path, inner["kind"], total_extracted)
+                # continue processing the EXTRACTED content — replacing kind/analysis entirely.
+                kind, analysis, dest_dir = inner["kind"], inner, out_dir
+            else:
+                log.warning("archive %s extraction yielded 0 non-empty files; keeping original archive", archive_path)
+                shutil.rmtree(out_dir, ignore_errors=True)
         except Exception as e:
-            # e.g. a split-archive volume without its part 1 — fail loudly
-            log.warning("extraction failed for %s: %s", archive_path, e)
-            await db.set_job_status(job_id, "failed", error=str(e)[:300])
-            await _edit_status(app, job, texts.error_extract(e))
-            return
-        from megabot.analyzers.classify import classify
-        inner = await asyncio.to_thread(classify, out_dir)
-        log.info("archive %s extracted → kind=%s, %d file(s)",
-                 archive_path, inner["kind"],
-                 len(inner["archives"]) + len(inner["videos"]) + len(inner["images"]) + len(inner["others"]))
-        # continue processing the EXTRACTED content — replacing kind/analysis
-        # entirely. (Keeping kind="archive" here let the elif-chain below
-        # overwrite files_to_send with the raw volumes instead.)
-        kind, analysis, dest_dir = inner["kind"], inner, out_dir
+            log.warning("extraction failed for %s: %s; keeping original archive", archive_path, e)
+            shutil.rmtree(out_dir, ignore_errors=True)
 
     if kind == "image_set":
         from megabot.processors.images2pdf import images_to_pdf
@@ -312,8 +315,9 @@ async def _upload_files(app, job: dict, display_name: str, files_to_send: list[s
 
     if sent == 0:
         # every upload failed — don't pretend success
-        await db.set_job_status(job_id, "failed", error="all uploads failed")
-        await _edit_status(app, job, texts.ERROR_GENERIC)
+        err_msg = prog.last_error or "all uploads failed"
+        await db.set_job_status(job_id, "failed", error=str(err_msg)[:300])
+        await _edit_status(app, job, f"❌ <b>Upload failed</b>\n<code>{err_msg}</code>")
         return
     await db.set_job_status(job_id, "done", files_sent=sent)
     await db.bump_user_jobs(job["user_id"])

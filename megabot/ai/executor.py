@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 
 def _list_all_files(base_dir: str) -> list[str]:
-    """Return all safe files currently under base_dir."""
+    """Return all safe, non-empty files currently under base_dir."""
     found = []
     canonical = os.path.realpath(base_dir)
     for root, _dirs, names in os.walk(canonical):
@@ -23,7 +23,8 @@ def _list_all_files(base_dir: str) -> list[str]:
             full = os.path.join(root, n)
             try:
                 safe = validate_sandbox_path(canonical, full)
-                found.append(safe)
+                if os.path.isfile(safe) and os.path.getsize(safe) > 0:
+                    found.append(safe)
             except Exception:
                 continue
     return natsorted(found, key=lambda p: os.path.basename(p).lower())
@@ -86,13 +87,24 @@ async def execute_plan(app, job: dict, dest_dir: str, plan: dict,
                         f"<blockquote>📂 <b>AI Action</b>\nDecompressing <b>{os.path.basename(archive_path)}</b>…</blockquote>",
                         cancel_kb(job_id)
                     )
-                    await asyncio.to_thread(safe_extract, archive_path, out_dir)
-                    # Remove the original compressed archive so it is not uploaded alongside extracted files
                     try:
-                        os.remove(archive_path)
-                        log.info("Removed archive %s after successful extraction", archive_path)
-                    except Exception as re:
-                        log.warning("Could not remove archive after extraction: %s", re)
+                        await asyncio.to_thread(safe_extract, archive_path, out_dir)
+                        extracted_files = [
+                            f for f in _list_all_files(out_dir)
+                            if os.path.isfile(f) and os.path.getsize(f) > 0
+                        ]
+                        if extracted_files:
+                            try:
+                                os.remove(archive_path)
+                                log.info("Removed archive %s after successful extraction", archive_path)
+                            except Exception as re:
+                                log.warning("Could not remove archive after extraction: %s", re)
+                        else:
+                            log.warning("Extraction of %s produced no valid non-empty files; keeping archive", archive_path)
+                            shutil.rmtree(out_dir, ignore_errors=True)
+                    except Exception as e:
+                        log.warning("safe_extract failed for %s: %s; keeping archive", archive_path, e)
+                        shutil.rmtree(out_dir, ignore_errors=True)
                     # Refresh file list
                     current_files = _list_all_files(canonical_dest)
 
@@ -205,13 +217,13 @@ async def execute_plan(app, job: dict, dest_dir: str, plan: dict,
                         if not rf or not isinstance(rf, str):
                             continue
                         candidate = os.path.join(canonical_dest, rf)
-                        if os.path.isfile(candidate):
+                        if os.path.isfile(candidate) and os.path.getsize(candidate) > 0:
                             explicit_uploads.append(validate_sandbox_path(canonical_dest, candidate))
                             continue
                         # Fallback: check if the file lives inside a subfolder like extracted/
                         clean_base = os.path.basename(rf).lower()
                         for cf in current_files:
-                            if os.path.basename(cf).lower() == clean_base:
+                            if os.path.basename(cf).lower() == clean_base and os.path.getsize(cf) > 0:
                                 explicit_uploads.append(cf)
                                 break
 
@@ -225,7 +237,7 @@ async def execute_plan(app, job: dict, dest_dir: str, plan: dict,
     seen = set()
     result = []
     for f in final_files:
-        if f not in seen and os.path.isfile(f):
+        if f not in seen and os.path.isfile(f) and os.path.getsize(f) > 0:
             seen.add(f)
             result.append(f)
 
