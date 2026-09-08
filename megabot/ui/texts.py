@@ -3,33 +3,43 @@ from megabot.processors.uploader import human_size, make_progress_bar
 
 LOGO = "⚡"
 
-WELCOME = """<blockquote>{} <b>MegaBot</b></blockquote>
-🚀 <b>Your MEGA & MediaFire → Telegram pipeline.</b>
+WELCOME = """<blockquote>{} <b>MegaBot AI</b></blockquote>
+🤖 <b>Your Autonomous Cloud Downloader & File Assistant.</b>
 
-Send me any <b>MEGA or MediaFire link</b> and I will:
-📥 Download it at maximum speed
-🔍 Analyze what's inside
-📦 Archive? Auto-extracted (ZIP/RAR/7Z) or uploaded as-is
-🖼️ Image set? Merged into one clean <b>PDF</b>
-🎬 Videos? Uploaded sequentially, stream-ready
+I am powered by an intelligent AI Agent with real tools to:
+📥 <b>Download:</b> MEGA.nz & MediaFire.com at maximum speed
+📦 <b>Smart Unzip:</b> Automatically extracts ZIP, RAR, 7Z, and TAR archives
+🖼️ <b>Image Sets:</b> Merged into clean, ordered <b>PDFs</b>
+🎬 <b>Videos:</b> Stream-ready uploads with thumbnails
+🛠️ <b>Autonomous Tools:</b> Unzip files, delete storage, clean disk, and manage jobs!
 
-<b>Just paste a link to begin</b> 👇""".format(LOGO)
+💬 <b>Talk to me naturally:</b>
+• Paste any MEGA or MediaFire link (with or without instructions)
+• Or ask me to unzip files, delete storage, check stats, or cancel jobs!""".format(LOGO)
 
-HELP = """<blockquote>{} <b>How to use MegaBot</b></blockquote>
-1️⃣ Paste one or more MEGA or MediaFire links (file or folder)
-2️⃣ Watch the live status card with progress bar
-3️⃣ Archives (ZIP, RAR, 7Z) are automatically extracted
-4️⃣ Receive your files right here
+HELP = """<blockquote>{} <b>MegaBot AI Guide</b></blockquote>
+🤖 <b>How to Use Me:</b>
+1️⃣ <b>Paste any link:</b> Send MEGA or MediaFire links (single or batch)
+2️⃣ <b>Add custom instructions:</b> E.g. <i>"unzip and keep only videos"</i>
+3️⃣ <b>Live progress:</b> Track downloads in real-time
+4️⃣ <b>Instant Delivery:</b> Receive your files directly in Telegram!
 
-<b>Supported hosts:</b> MEGA.nz • MediaFire.com
-<b>Supported formats:</b> zip, rar, 7z, tar • images → PDF • videos • documents
+🛠️ <b>Autonomous AI Tools:</b>
+• <i>"Unzip my files"</i> — extracts archives
+• <i>"Delete my files"</i> — cleans job files from disk
+• <i>"Clean disk"</i> — frees up server storage
+• <i>"Show my jobs"</i> — lists active and queued downloads
+• <i>"Cancel job <id>"</i> — stops a running job
 
-<b>Commands</b>
-/start — start the bot
-/agent — talk to AI Agent & manage jobs/files
-/login — connect your MEGA account
-/logout — disconnect it
-/settings — your preferences""".format(LOGO)
+<b>Supported Hosts:</b> MEGA.nz • MediaFire.com
+<b>Supported Formats:</b> zip, rar, 7z, tar, iso • mp4, mkv • images → PDF • docs
+
+<b>Commands:</b>
+/start — Welcome & features
+/agent — AI Agent dashboard & status
+/settings — Preferences (archive mode, PDF, thumbnails)
+/cancel — Cancel active job
+/login & /logout — Custom MEGA account""".format(LOGO)
 
 BANNED = "🚫 You are banned from using this bot."
 
