@@ -76,12 +76,16 @@ async def get_downloader(url: str, user_id: Optional[int] = None) -> BaseDownloa
     """
     if is_terabox_link(url):
         from config import TERABOX_COOKIE
-        cookie = TERABOX_COOKIE
+        from megabot.core.database import db
+
+        cookie = None
         if user_id:
-            from megabot.core.database import db
-            user_cookie = await db.get_user_setting(user_id, "terabox_cookie")
-            if user_cookie:
-                cookie = user_cookie
+            cookie = await db.get_user_setting(user_id, "terabox_cookie")
+        if not cookie:
+            cookie = await db.get_config("terabox_cookie")
+        if not cookie:
+            cookie = TERABOX_COOKIE
+
         return TeraBoxDownloader(cookie=cookie)
 
     if is_mp4upload_link(url):

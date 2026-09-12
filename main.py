@@ -51,6 +51,7 @@ async def set_bot_commands(client):
             BotCommand("agent", "Check AI Agent status"),
             BotCommand("login", "Connect your MEGA account"),
             BotCommand("logout", "Disconnect your MEGA account"),
+            BotCommand("terabox", "Set TeraBox ndus cookie"),
             BotCommand("settings", "Your preferences"),
             BotCommand("help", "How to use the bot"),
             BotCommand("stats", "Bot statistics (owner)"),

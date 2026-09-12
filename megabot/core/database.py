@@ -307,6 +307,36 @@ class Database:
             logging.error("Error fetching DB stats: %s", e)
             return None
 
+    # ══════════════════════════════════════════════════════
+    #  BOT GLOBAL CONFIG  (persistent bot settings in Mongo)
+    # ══════════════════════════════════════════════════════
+
+    async def get_config(self, key: str, default=None):
+        if self.db is None:
+            return default
+        try:
+            doc = await self.db["bot_config"].find_one({"_id": key})
+            return doc.get("value", default) if doc else default
+        except Exception:
+            return default
+
+    async def set_config(self, key: str, value):
+        if self.db is not None:
+            await self.db["bot_config"].update_one(
+                {"_id": key},
+                {"$set": {"value": value, "updated_at": datetime.utcnow()}},
+                upsert=True,
+            )
+
+    async def delete_config(self, key: str) -> bool:
+        if self.db is None:
+            return False
+        try:
+            res = await self.db["bot_config"].delete_one({"_id": key})
+            return res.deleted_count > 0
+        except Exception:
+            return False
+
 
 # ── Singleton instance ───────────────────────────────────────
 db = Database(MONGO_URL)

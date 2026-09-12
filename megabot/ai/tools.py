@@ -105,6 +105,14 @@ TOOL_DEFINITIONS = [
         "name": "logout_mega_account",
         "description": "Log out user from their custom MEGA account and remove saved session credentials.",
         "parameters": {}
+    },
+    {
+        "name": "set_terabox_cookie",
+        "description": "Set or update the TeraBox session cookie (ndus) directly for high-speed downloads without editing files on the server. Validates with TeraBox servers and saves to MongoDB. Bot owner can set it globally for all users.",
+        "parameters": {
+            "cookie": "The TeraBox ndus cookie value (required).",
+            "scope": "Optional scope: 'global' (bot-wide for all users, owner only) or 'personal' (current user only). Default is 'global' for owner, 'personal' for users."
+        }
     }
 ]
 
@@ -538,6 +546,40 @@ async def execute_tool(tool_name: str, params: dict, context: dict) -> dict:
             await db.delete_mega_account(user_id)
             await db.delete_mega_session(user_id)
             return {"status": "success", "message": "Successfully logged out of custom MEGA account."}
+
+        # ── 15. set_terabox_cookie ───────────────────────────
+        elif tool_name == "set_terabox_cookie":
+            raw_cookie = str(params.get("cookie", "")).strip()
+            if not raw_cookie:
+                return {"status": "error", "message": "cookie parameter is required."}
+
+            from megabot.downloaders.terabox import _normalize_cookie, check_cookie_validity
+            norm = _normalize_cookie(raw_cookie)
+            if len(norm) < 10:
+                return {"status": "error", "message": "Cookie seems invalid or too short. Please provide the full ndus value."}
+
+            check = check_cookie_validity(norm)
+            scope = str(params.get("scope", "global" if is_owner else "personal")).lower()
+
+            if is_owner and scope == "global":
+                await db.set_config("terabox_cookie", norm)
+                if user_id:
+                    await db.set_user_setting(user_id, "terabox_cookie", norm)
+                scope_str = "Global (Active for all bot users)"
+            else:
+                if user_id:
+                    await db.set_user_setting(user_id, "terabox_cookie", norm)
+                scope_str = "Personal"
+
+            uname = check.get("username") or "TeraBox User"
+            valid_note = "Active & Verified ✅" if check.get("valid") else f"Saved with notice: {check.get('message')}"
+
+            return {
+                "status": "success",
+                "scope": scope_str,
+                "account": uname,
+                "message": f"TeraBox session cookie successfully saved in MongoDB. Scope: {scope_str}. Account: {uname}. Status: {valid_note}.",
+            }
 
         else:
             return {"status": "error", "message": f"Unknown tool: '{tool_name}'"}

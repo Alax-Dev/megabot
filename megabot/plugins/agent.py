@@ -52,8 +52,10 @@ CAPABILITIES & RULES:
      Call tool `list_job_files`.
    - When the user asks about disk space or server statistics:
      Call tool `get_system_stats`.
-   - When the user asks to change settings (archive mode, PDF merging, video thumbs, or TeraBox cookie):
+   - When the user asks to change settings (archive mode, PDF merging, video thumbs):
      Call tool `update_user_setting`.
+   - When the user asks to set or update TeraBox session cookie:
+     Call tool `set_terabox_cookie`.
    - When the user asks to clear cache:
      Call tool `clear_cache`.
 
@@ -176,7 +178,8 @@ async def cancel_command(client: Client, message: Message):
     & filters.text
     & ~filters.command([
         "start", "help", "settings", "stats", "ban", "unban",
-        "broadcast", "login", "logout", "cancel", "agent", "ai"
+        "broadcast", "login", "logout", "cancel", "agent", "ai",
+        "terabox", "cookie"
     ])
 )
 async def on_user_message(client: Client, message: Message):

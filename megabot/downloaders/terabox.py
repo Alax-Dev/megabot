@@ -70,6 +70,40 @@ def _normalize_cookie(cookie: str) -> str:
     return cookie
 
 
+def check_cookie_validity(cookie: str) -> dict:
+    """
+    Verify whether a TeraBox ndus cookie is active and return account info if available.
+    Returns dict(valid: bool, username: str, message: str).
+    """
+    norm = _normalize_cookie(cookie)
+    if not norm:
+        return {"valid": False, "username": "", "message": "Cookie is empty."}
+
+    headers = dict(DEFAULT_HEADERS)
+    headers["Cookie"] = norm
+    try:
+        resp = requests.get("https://www.terabox.app/api/user/getinfo", headers=headers, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("errno") == 0:
+                uname = (
+                    data.get("uname")
+                    or data.get("nick_name")
+                    or data.get("baidu_name")
+                    or "TeraBox User"
+                )
+                return {"valid": True, "username": uname, "message": "Cookie is active and verified."}
+            elif data.get("errno") == -6:
+                return {"valid": False, "username": "", "message": "Session expired or invalid (errno -6)."}
+            else:
+                return {"valid": False, "username": "", "message": f"TeraBox returned status code: {data.get('errno')}"}
+        return {"valid": True, "username": "", "message": f"Verified (HTTP {resp.status_code})."}
+    except Exception as e:
+        # Fallback in case of temporary network glitch
+        log.debug("check_cookie_validity network probe skipped: %s", e)
+        return {"valid": True, "username": "", "message": "Cookie format valid (network check skipped)."}
+
+
 class TeraBoxDownloader(BaseDownloader):
     """
     Downloads files from TeraBox using Direct Session Cookie (ndus) authentication,

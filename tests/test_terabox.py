@@ -190,6 +190,45 @@ class TestTeraBoxDownloader(unittest.TestCase):
         dl = asyncio.run(get_downloader("https://terabox.com/s/1TeraTest"))
         self.assertIsInstance(dl, TeraBoxDownloader)
 
+    @patch("requests.get")
+    def test_check_cookie_validity(self, mock_get):
+        from megabot.downloaders.terabox import check_cookie_validity
+
+        # Empty
+        res_empty = check_cookie_validity("")
+        self.assertFalse(res_empty["valid"])
+
+        # Valid session
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"errno": 0, "uname": "TeraMaster"}
+        mock_get.return_value = mock_resp
+        res_ok = check_cookie_validity("Y5validcookie")
+        self.assertTrue(res_ok["valid"])
+        self.assertEqual(res_ok["username"], "TeraMaster")
+
+        # Expired session
+        mock_resp.json.return_value = {"errno": -6}
+        res_expired = check_cookie_validity("Y5expired")
+        self.assertFalse(res_expired["valid"])
+        self.assertIn("expired", res_expired["message"].lower())
+
+    def test_execute_tool_set_terabox_cookie(self):
+        import asyncio
+        from megabot.ai.tools import execute_tool
+
+        with patch("megabot.downloaders.terabox.requests.get") as mock_get:
+            mock_resp = MagicMock()
+            mock_resp.status_code = 200
+            mock_resp.json.return_value = {"errno": 0, "uname": "Alice"}
+            mock_get.return_value = mock_resp
+
+            context = {"user_id": 12345, "is_owner": True}
+            res = asyncio.run(execute_tool("set_terabox_cookie", {"cookie": "Y5samplecookie12345"}, context))
+            self.assertEqual(res["status"], "success")
+            self.assertIn("Global", res["scope"])
+            self.assertEqual(res["account"], "Alice")
+
 
 if __name__ == "__main__":
     unittest.main()
