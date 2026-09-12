@@ -36,7 +36,7 @@ AVAILABLE TOOLS:
 
 CAPABILITIES & RULES:
 1. TOOL DISPATCH:
-   - When the user sends MEGA (mega.nz), MediaFire (mediafire.com), or MP4Upload (mp4upload.com) link(s), or asks to download a URL:
+   - When the user sends MEGA (mega.nz), MediaFire (mediafire.com), MP4Upload (mp4upload.com), or TeraBox (terabox.com/1024tera.com) link(s), or asks to download a URL:
      Call tool `start_download` with the URLs and any instructions (e.g., 'unzip archive', 'extract only mp4', 'merge images to pdf', 'delete samples').
    - When the user asks to unzip, decompress, or extract archives (ZIP, RAR, 7Z, TAR, GZ):
      Call tool `unzip_files`.
@@ -52,7 +52,7 @@ CAPABILITIES & RULES:
      Call tool `list_job_files`.
    - When the user asks about disk space or server statistics:
      Call tool `get_system_stats`.
-   - When the user asks to change settings (archive mode, PDF merging, video thumbs):
+   - When the user asks to change settings (archive mode, PDF merging, video thumbs, or TeraBox cookie):
      Call tool `update_user_setting`.
    - When the user asks to clear cache:
      Call tool `clear_cache`.
@@ -64,7 +64,7 @@ CAPABILITIES & RULES:
 3. CONVERSATIONAL BEHAVIOR:
    - If the user greets, chats, asks what you can do, or asks about features:
      Respond warmly and clearly in Telegram HTML format (<b>, <i>, <code>, <b>).
-     Explicitly state that you have autonomous tools to download MEGA/MediaFire/MP4Upload links, unzip archives, convert images to PDF, delete files, and manage disk space!
+     Explicitly state that you have autonomous tools to download MEGA/MediaFire/MP4Upload/TeraBox links, unzip archives, convert images to PDF, delete files, and manage disk space!
 
 4. RESPONSE FORMAT (Respond with JSON only):
    To execute a tool:
@@ -128,7 +128,7 @@ async def agent_command(client: Client, message: Message):
             "• <b>Privacy:</b> 🛡️ <i>Zero file content inspection</i>\n"
             "• <b>Sandbox:</b> 🔒 <i>Enforced job directory jail</i>\n\n"
             "🛠 <b>Autonomous Tools & Capabilities:</b>\n"
-            "• 📥 <b>Downloads:</b> MEGA.nz, MediaFire, and MP4Upload\n"
+            "• 📥 <b>Downloads:</b> MEGA.nz, MediaFire, MP4Upload, and TeraBox\n"
             "• 📦 <b>Unzip:</b> Extract ZIP, RAR, 7Z, TAR archives automatically\n"
             "• 🖼️ <b>PDF:</b> Merge image sets into single ordered PDFs\n"
             "• 🗑️ <b>Files:</b> Delete job files & auto-clean server disk\n"
@@ -232,7 +232,7 @@ async def _run_agent_turn(client: Client, message: Message, user_text: str):
             await message.reply_text(
                 "<blockquote>🤖 <b>MegaBot AI Agent</b></blockquote>\n"
                 "To chat with the AI Agent and use autonomous tools, set <code>OPENROUTER_API_KEY</code> in your <code>.env</code> file.\n\n"
-                "You can still download MEGA, MediaFire, and MP4Upload links by pasting them here!",
+                "You can still download MEGA, MediaFire, MP4Upload, and TeraBox links by pasting them here!",
                 disable_web_page_preview=True,
             )
             return

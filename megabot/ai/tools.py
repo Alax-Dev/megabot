@@ -18,9 +18,9 @@ log = logging.getLogger(__name__)
 TOOL_DEFINITIONS = [
     {
         "name": "start_download",
-        "description": "Download one or more files/folders from MEGA, MediaFire, or MP4Upload. Automatically queues and tracks the download with optional custom instructions (e.g., unzip archives, merge images into PDF, filter files, keep archive).",
+        "description": "Download one or more files/folders from MEGA, MediaFire, MP4Upload, or TeraBox. Automatically queues and tracks the download with optional custom instructions (e.g., unzip archives, merge images into PDF, filter files, keep archive).",
         "parameters": {
-            "urls": "A list of MEGA, MediaFire, or MP4Upload URL strings, or a single URL string (required).",
+            "urls": "A list of MEGA, MediaFire, MP4Upload, or TeraBox URL strings, or a single URL string (required).",
             "instruction": "Optional instructions for what to do with the files (e.g. 'unzip archive', 'extract only videos', 'convert images to pdf', 'delete samples')."
         }
     },
@@ -87,13 +87,13 @@ TOOL_DEFINITIONS = [
         "name": "update_user_setting",
         "description": "Change a user preference setting.",
         "parameters": {
-            "key": "Setting name: 'archive_mode', 'image_pdf', or 'video_thumbs'.",
-            "value": "New value. For archive_mode: 'extract', 'archive', or 'ask'. For image_pdf/video_thumbs: true or false."
+            "key": "Setting name: 'archive_mode', 'image_pdf', 'video_thumbs', or 'terabox_cookie'.",
+            "value": "New value. For archive_mode: 'extract', 'archive', or 'ask'. For image_pdf/video_thumbs: true or false. For terabox_cookie: string ndus cookie value."
         }
     },
     {
         "name": "clear_cache",
-        "description": "Clear duplicate link cache so any previously downloaded MEGA, MediaFire, or MP4Upload link can be processed again immediately.",
+        "description": "Clear duplicate link cache so any previously downloaded MEGA, MediaFire, MP4Upload, or TeraBox link can be processed again immediately.",
         "parameters": {}
     },
     {
@@ -140,7 +140,7 @@ async def execute_tool(tool_name: str, params: dict, context: dict) -> dict:
             if not valid_urls:
                 return {
                     "status": "error",
-                    "message": "No valid MEGA, MediaFire, or MP4Upload links found. Links must start with mega.nz, mediafire.com, or mp4upload.com."
+                    "message": "No valid MEGA, MediaFire, MP4Upload, or TeraBox links found. Links must start with mega.nz, mediafire.com, mp4upload.com, or terabox/1024tera."
                 }
 
             valid_urls = valid_urls[:5]  # limit 5 per batch
@@ -448,8 +448,8 @@ async def execute_tool(tool_name: str, params: dict, context: dict) -> dict:
         elif tool_name == "update_user_setting":
             key = params.get("key")
             val = params.get("value")
-            if key not in ["archive_mode", "image_pdf", "video_thumbs"]:
-                return {"status": "error", "message": f"Invalid setting key '{key}'. Must be archive_mode, image_pdf, or video_thumbs."}
+            if key not in ["archive_mode", "image_pdf", "video_thumbs", "terabox_cookie"]:
+                return {"status": "error", "message": f"Invalid setting key '{key}'. Must be archive_mode, image_pdf, video_thumbs, or terabox_cookie."}
 
             if key == "archive_mode":
                 val = str(val).lower()
@@ -460,9 +460,11 @@ async def execute_tool(tool_name: str, params: dict, context: dict) -> dict:
                     val = val.lower() in ["true", "1", "yes", "on"]
                 else:
                     val = bool(val)
+            elif key == "terabox_cookie":
+                val = str(val).strip()
 
             await db.set_user_setting(user_id, key, val)
-            return {"status": "success", "message": f"Setting '{key}' successfully updated to {val}."}
+            return {"status": "success", "message": f"Setting '{key}' successfully updated."}
 
         # ── 11. unzip_files ──────────────────────────────────
         elif tool_name == "unzip_files":

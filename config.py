@@ -17,9 +17,10 @@ BOT_USERNAME = os.environ.get("BOT_USERNAME", "")
 MONGO_URL = os.environ.get("MONGO_URL", "")
 MONGO_NAME = os.environ.get("MONGO_NAME", "megabot")
 
-# ─── MEGA account ────────────────────────────────────────────
+# ─── Accounts ────────────────────────────────────────────────
 MEGA_EMAIL = os.environ.get("MEGA_EMAIL", "")
 MEGA_PASSWORD = os.environ.get("MEGA_PASSWORD", "")
+TERABOX_COOKIE = os.environ.get("TERABOX_COOKIE", "")
 
 # ─── Paths & limits ──────────────────────────────────────────
 DOWNLOAD_DIR = os.environ.get("DOWNLOAD_DIR", os.path.join(os.getcwd(), "downloads"))

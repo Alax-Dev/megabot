@@ -15,11 +15,17 @@ from megabot.downloaders.mp4upload import (
     is_mp4upload_link,
     mp4upload_link_key,
 )
+from megabot.downloaders.terabox import (
+    TeraBoxDownloader,
+    extract_terabox_links,
+    is_terabox_link,
+    terabox_link_key,
+)
 
 
 def extract_supported_links(text: str) -> list[str]:
     """
-    Extract all supported download links (MEGA, MediaFire, MP4Upload) from text.
+    Extract all supported download links (MEGA, MediaFire, MP4Upload, TeraBox) from text.
     Preserves order and deduplicates.
     """
     if not text:
@@ -28,11 +34,12 @@ def extract_supported_links(text: str) -> list[str]:
     mega_links = extract_mega_links(text)
     mf_links = extract_mediafire_links(text)
     mp4u_links = extract_mp4upload_links(text)
+    tb_links = extract_terabox_links(text)
 
     # Combine and deduplicate
     combined = []
     seen = set()
-    for link in mega_links + mf_links + mp4u_links:
+    for link in mega_links + mf_links + mp4u_links + tb_links:
         if link not in seen:
             seen.add(link)
             combined.append(link)
@@ -42,6 +49,8 @@ def extract_supported_links(text: str) -> list[str]:
 
 def get_link_key(url: str) -> str:
     """Return a unique, stable cache identifier for any supported link."""
+    if is_terabox_link(url):
+        return terabox_link_key(url)
     if is_mp4upload_link(url):
         return mp4upload_link_key(url)
     if is_mediafire_link(url):
@@ -53,13 +62,28 @@ def is_supported_link(url: str) -> bool:
     """Check if a URL is handled by any supported downloader."""
     if not url:
         return False
-    return is_mp4upload_link(url) or is_mediafire_link(url) or "mega." in url.lower()
+    return (
+        is_terabox_link(url)
+        or is_mp4upload_link(url)
+        or is_mediafire_link(url)
+        or "mega." in url.lower()
+    )
 
 
 async def get_downloader(url: str, user_id: Optional[int] = None) -> BaseDownloader:
     """
     Instantiate and return the appropriate downloader instance for the URL.
     """
+    if is_terabox_link(url):
+        from config import TERABOX_COOKIE
+        cookie = TERABOX_COOKIE
+        if user_id:
+            from megabot.core.database import db
+            user_cookie = await db.get_user_setting(user_id, "terabox_cookie")
+            if user_cookie:
+                cookie = user_cookie
+        return TeraBoxDownloader(cookie=cookie)
+
     if is_mp4upload_link(url):
         return MP4UploadDownloader()
 
